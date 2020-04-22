@@ -1,0 +1,6 @@
+*.zip
+*.npz
+/data/
+/frames/
+/venv/
+/.idea/
