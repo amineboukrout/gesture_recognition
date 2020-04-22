@@ -12,6 +12,7 @@ class data:
         if os.path.isfile('splits.npz'):
             self.load_sets()
         else:
+
             x, y = self.retrieve_data(data_folder)
             self.save_sets(x, y)
 
@@ -66,4 +67,4 @@ class data:
         self.y_train = arrs['ytrain']
         self.y_test = arrs['ytest']
 
-data('data')
+# data('data')
