@@ -53,7 +53,7 @@ class data:
                     dataCSV.append([img.split('.')[0], dest_dir, clas])
         df = pd.DataFrame(dataCSV, columns=['image','path','label'])
         df.to_csv('data.csv')
-
+# ,
     def make_data_folders(self, csv='data.csv'):
         df = pd.read_csv(csv)
         labels = set(df.label)
