@@ -4,3 +4,5 @@
 /frames/
 /venv/
 /.idea/
+/__pycache__/
+/logs/

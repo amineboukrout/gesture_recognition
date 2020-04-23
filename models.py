@@ -1,29 +1,38 @@
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 from keras.applications import VGG16, VGG19
-from keras.callbacks import Callback
 from keras.layers import Dense, Dropout, Flatten, Input
-from keras.models import Model, Sequential
-from keras import optimizers
+from keras.models import Model
 from data import data
+from keras.optimizers import Adam, RMSprop
 from keras.layers import Conv3D, MaxPooling3D, BatchNormalization, LSTM
-
-class MetricsCheckpoint(Callback):
-    # saves state of model after each epoch
-    def __init__(self, path):
-        super(MetricsCheckpoint, self).__init__()
-        self.path = path
-        self.history = {}
-
-    def on_epoch_end(self, epoch, logs=None):
-        for k, v in logs.items():
-            self.history.setdefault(k, []).append(v)
-        np.save(self.path, self.history)
+import sys
 
 class Models:
-    def __init__(self):
+    def __init__(self, model, input_shape=(224, 224, 3), optimizer = 'Adam'):
         self.data = data('data')
         self.labels = self.data.get_labels('data/00')
+
+        if model == 'vgg16':
+            print('Loading vgg16 model...')
+            self.model = self.vgg(vggno=16, input_shape=input_shape)
+        elif model == 'vgg19':
+            print('Loading vgg19 model...')
+            self.model = self.vgg(vggno=19, input_shape=input_shape)
+        elif model == '3dcnn':
+            print('Loading 3d cnn model...')
+            self.model = self.cnn3d(input_shape=input_shape)
+        elif model == 'r3dcnn':
+            print('Loading 3d rcnn model...')
+            self.model = self.r3dcnn(input_shape=input_shape)
+        else:
+            print('{} is not a valid model!'.format(model))
+            sys.exit()
+
+        # compile the model
+        optimizer = Adam(learning_rate=0.01,amsgrad=False) if optimizer.lower() == 'adam' else RMSprop(learning_rate=0.01, rho=0.9)
+        self.model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+        print('Model compiled!!!')
 
     def vgg(self, input_shape = (224,224,3), scratch=False, vggno=16):
         # remove last layer of model
@@ -57,7 +66,7 @@ class Models:
         model = Model(input = img_input, output = x)
         return model
 
-    def cnn3d(self, input_shape = (224, 224)):
+    def cnn3d(self, input_shape = (224, 224, 3)):
         # input layer
         img_input = Input(shape=input_shape, name='img_input')  # input to model
         # block layer 1
@@ -130,6 +139,3 @@ class Models:
 
         model = Model(input=img_input, output=x)
         return model
-
-    def compile_model(self, model):
-        pass
