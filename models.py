@@ -61,7 +61,7 @@ class Models:
         # append the fully connected layers to model
         x = Flatten(name='flatten')(output)
         x = Dropout(0.5)(x)
-        x = Dense(len(self.labels), activation='softmax', name='predictions')(x)
+        x = Dense(1, activation='softmax', name='predictions')(x)
 
         model = Model(input = img_input, output = x)
         return model
@@ -97,7 +97,7 @@ class Models:
         x = Dropout(0.5)(x)
         x = Flatten(name='flatten')(x)
         x = Dropout(0.5)(x)
-        x = Dense(len(self.labels), activation='softmax', name='predictions')(x)
+        x = Dense(1, activation='softmax', name='predictions')(x)
 
         model = Model(input = img_input, output = x)
         return model
@@ -135,7 +135,7 @@ class Models:
         x = Dropout(0.5)(x)
         x = Flatten(name='flatten')(x)
         x = Dropout(0.5)(x)
-        x = Dense(len(self.labels), activation='softmax', name='predictions')(x)
+        x = Dense(1, activation='softmax', name='predictions')(x)
 
         model = Model(input=img_input, output=x)
         return model
