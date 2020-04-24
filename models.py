@@ -10,8 +10,8 @@ import sys
 
 class Models:
     def __init__(self, model, input_shape=(224, 224, 3), optimizer = 'Adam'):
-        self.data = data('data')
-        self.labels = self.data.get_labels('data/00')
+        self.data = data()
+        self.labels = self.data.get_labels('data/train')
 
         if model == 'vgg16':
             print('Loading vgg16 model...')

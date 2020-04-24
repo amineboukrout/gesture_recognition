@@ -4,6 +4,7 @@ from keras.callbacks import Callback, TensorBoard, EarlyStopping, CSVLogger
 from keras.utils import to_categorical
 from models import Models as myModels
 from data import data as theData
+import sys
 
 class MetricsCheckpoint(Callback):
     # saves state of model after each epoch
@@ -24,15 +25,16 @@ def train(model, batch_size, nb_epoch, image_shape, optimizer):
     metricsCheckpoint = MetricsCheckpoint('logs')
     steps_per_epoch = 120
 
-    data = theData('data')
-    x_train, x_test, y_train, y_test = data.x_train, data.x_test, data.y_train, data.y_test
-    y_train, y_test = to_categorical(y_train), to_categorical(y_test)
+    data = theData()
+    train_gen = data.train_gen
+    test_gen = data.test_gen
     model = myModels(model, image_shape, optimizer)
+    print('hhhhhhhh')
 
-    model.model.fit(x_train, y_train, epochs=nb_epoch,
+    model.model.fit_generator(train_gen,epochs=nb_epoch,
                     callbacks=[tb, early_stopper, csv_logger],
-                    validation_data=(x_test,y_test), validation_steps=120,
-                    steps_per_epoch=steps_per_epoch,use_multiprocessing=True)
+                    validation_data=test_gen, validation_steps=120,
+                    steps_per_epoch=steps_per_epoch)
 
 def main():
     class_limit = int(2)
@@ -49,11 +51,4 @@ def main():
     train(model, batch_size, nb_epoch, image_shape, optimizer)
 
 if __name__ == "__main__":
-    # main()
-    new_dataset_name = 'data_'
-    for class_folders_num in os.listdir('data'):
-        class_folders_dir = os.path.join('data', class_folders_num)
-        for class_folders in os.listdir(class_folders_dir):
-            if not os.path.isdir(os.path.join(new_dataset_name,class_folders[3:])):
-                if not os.path.isdir(new_dataset_name): os.mkdir(new_dataset_name)
-                os.mkdir(os.path.join(new_dataset_name,class_folders[3:]))
+    main()

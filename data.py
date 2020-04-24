@@ -58,7 +58,7 @@ class data:
         for group in os.listdir(data_folder):
             group_flds = os.listdir(os.path.join(data_folder,group))
             for group_fld in group_flds:
-                clas = group_fld[3:]
+                clas = group_fld
                 if '_' in clas: clas = str(clas).replace('_',' ')
                 group_imgs_dir = os.path.join(data_folder,group,group_fld)
                 for img in os.listdir(group_imgs_dir):
@@ -80,7 +80,7 @@ class data:
             if not os.path.isdir(train_test):
                 os.mkdir(train_test)
             for label in labels:
-                label_dir =os.path.join(train_test, label)
+                label_dir =os.path.join(train_test, str(label))
                 if not os.path.isdir(label_dir):
                     os.mkdir(label_dir)
 
@@ -113,7 +113,7 @@ class data:
 
         for row in df.iterrows():
             folder_dest = os.path.join(folder_split, str(row[1]['label']), str(row[1]['image'])+'.png')
-            shutil.move(row[1]['path'], folder_dest)
+            # shutil.move(row[1]['path'], folder_dest)
             new_paths.append(folder_dest)
 
         df['new_path'] = pd.Series(new_paths, index=df.index)
