@@ -5,6 +5,7 @@ from keras.utils import to_categorical
 from models import Models as myModels
 from data import data as theData
 import sys
+from keras.preprocessing.image import ImageDataGenerator
 
 class MetricsCheckpoint(Callback):
     # saves state of model after each epoch
@@ -25,15 +26,21 @@ def train(model, batch_size, nb_epoch, image_shape, optimizer):
     metricsCheckpoint = MetricsCheckpoint('logs')
     steps_per_epoch = 120
 
-    data = theData()
-    train_gen = data.train_gen
-    test_gen = data.test_gen
     model = myModels(model, image_shape, optimizer)
-    print('hhhhhhhh')
+    data = theData()
+    datagen = ImageDataGenerator()
+    train_x, train_y = np.array(data.x_train), np.array(data.y_train)
+    test_x, test_y = np.array(data.x_test), np.array(data.y_test)
+    train_gen = datagen.flow(train_x,to_categorical(train_y))
+    test_gen = datagen.flow(test_x, to_categorical(test_y))
 
-    model.model.fit_generator(train_gen,epochs=nb_epoch,
+    # model.model.fit(train_x, train_y,
+    #                 callbacks=[tb, early_stopper, csv_logger],
+    #                 validation_data=(test_x,test_y), validation_steps=60,
+    #                 steps_per_epoch=steps_per_epoch, batch_size=batch_size)
+    model.model.fit_generator(train_gen, epochs=nb_epoch,
                     callbacks=[tb, early_stopper, csv_logger],
-                    validation_data=test_gen, validation_steps=120,
+                    validation_data=test_gen, validation_steps=60,
                     steps_per_epoch=steps_per_epoch)
 
 def main():
@@ -42,7 +49,7 @@ def main():
     image_width = int(224)
 
     # train parameters
-    model = 'vgg16'
+    model = '2dcnn'
     batch_size = 32
     nb_epoch = 100
     optimizer = 'Adam'

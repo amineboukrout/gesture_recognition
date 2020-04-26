@@ -3,15 +3,15 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.applications import VGG16, VGG19
 from keras.layers import Dense, Dropout, Flatten, Input
 from keras.models import Model
-from data import data
+from keras import models
 from keras.optimizers import Adam, RMSprop
-from keras.layers import Conv3D, MaxPooling3D, BatchNormalization, LSTM
+from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, LSTM
 import sys
 
 class Models:
     def __init__(self, model, input_shape=(224, 224, 3), optimizer = 'Adam'):
-        self.data = data()
-        self.labels = self.data.get_labels('data/train')
+        with open('labels.txt', 'r') as f:
+            self.labels = [line.rstrip('\n') for line in f]
 
         if model == 'vgg16':
             print('Loading vgg16 model...')
@@ -19,12 +19,9 @@ class Models:
         elif model == 'vgg19':
             print('Loading vgg19 model...')
             self.model = self.vgg(vggno=19, input_shape=input_shape)
-        elif model == '3dcnn':
+        elif model == '2dcnn':
             print('Loading 3d cnn model...')
-            self.model = self.cnn3d(input_shape=input_shape)
-        elif model == 'r3dcnn':
-            print('Loading 3d rcnn model...')
-            self.model = self.r3dcnn(input_shape=input_shape)
+            self.model = self.cnn()
         else:
             print('{} is not a valid model!'.format(model))
             sys.exit()
@@ -35,18 +32,18 @@ class Models:
         print('Model compiled!!!')
 
     def vgg(self, input_shape = (224,224,3), scratch=False, vggno=16):
+        # input to model
+        # img_input = Input(shape=input_shape, name='img_input')
         # remove last layer of model
         if scratch and vggno == 16:
-            model = VGG16(weights = None, include_top = False)
+            model = VGG16(input_shape=input_shape,weights = None, include_top = False)
         elif scratch and vggno == 19:
-            model = VGG19(weights=None, include_top=False)
+            model = VGG19(input_shape=input_shape,weights=None, include_top=False)
         elif not scratch and vggno == 16:
-            model = VGG16(weights='imagenet', include_top=False)
+            model = VGG16(input_shape=input_shape,weights='imagenet', include_top=False)
         else:
-            model = VGG19(weights='imagenet', include_top=False)
+            model = VGG19(input_shape=input_shape, weights='imagenet', include_top=False)
 
-        # input to model
-        img_input = Input(shape=input_shape, name='img_input')
 
         if scratch:
             for layer in model.layers:
@@ -54,88 +51,55 @@ class Models:
         else:
             for layer in model.layers:
                 layer.trainable = False
+        vgg = model
+        model = models.Sequential()
 
         # obtain current output of model w/o fully connected layers
-        output = model(img_input)
+        model.add(vgg)
 
         # append the fully connected layers to model
-        x = Flatten(name='flatten')(output)
-        x = Dropout(0.5)(x)
-        x = Dense(1, activation='softmax', name='predictions')(x)
+        # model.add(Flatten(name='flatten'), input_shape=(None, None, 512))
+        model.add(Dropout(0.5))
+        model.add(Flatten())
+        model.add(Dense(10, activation='softmax', name='predictions'))
 
-        model = Model(input = img_input, output = x)
+        # model = Model(input = img_input, output = x)
+        print(model.summary())
         return model
 
-    def cnn3d(self, input_shape = (224, 224, 3)):
-        # input layer
-        img_input = Input(shape=input_shape, name='img_input')  # input to model
+    def cnn(self, input_shape = (224, 224, 3)):
+        # input layer: 32 IS THE BATCH
+        # img_input = Input(shape=input_shape, name='img_input')  # input to model
+        model = models.Sequential()
         # block layer 1
-        x = Conv3D(filters=64, kernel_size=(3,3,3), padding='same')(img_input)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3,3,3), padding='same')(x)
+        model.add(Conv2D(input_shape=input_shape, filters=64, kernel_size=(3,3), padding='same'))
+        model.add(BatchNormalization())
+        model.add(MaxPooling2D(strides=(3,3), padding='same'))
         # block layer 2
-        x = Conv3D(filters=128, kernel_size=(3, 3, 3), padding='same')(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
+        model.add(Conv2D(filters=128, kernel_size=(3,3), padding='same'))
+        model.add(BatchNormalization())
+        model.add(MaxPooling2D(strides=(3,3), padding='same'))
         # block layer 3
-        x = Conv3D(filters=256, kernel_size=(3, 3, 3), padding='same')(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
+        model.add(Conv2D(filters=256, kernel_size=(3,3), padding='same'))
+        model.add(BatchNormalization())
+        model.add(MaxPooling2D(strides=(3,3), padding='same'))
         # block layer 4
-        x = Conv3D(filters=512, kernel_size=(3, 3, 3), padding='same')(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
+        model.add(Conv2D(filters=512, kernel_size=(3,3), padding='same'))
+        model.add(BatchNormalization())
+        model.add(MaxPooling2D(strides=(3,3), padding='same'))
         # block layer 2
-        x = Conv3D(filters=512, kernel_size=(3, 3, 3), padding='same')(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
+        model.add(Conv2D(filters=512, kernel_size=(3,3), padding='same'))
+        model.add(BatchNormalization())
+        model.add(MaxPooling2D(strides=(3,3), padding='same'))
         # fully connected layer
-        x = Flatten()(x)
-        x = Dense(units=512, activation='relu')(x)
-        x = Dropout(0.5)(x)
-        x = Dense(units=512, activation='relu')(x)
-        x = Dropout(0.5)(x)
-        x = Flatten(name='flatten')(x)
-        x = Dropout(0.5)(x)
-        x = Dense(1, activation='softmax', name='predictions')(x)
+        model.add(Dense(units=512, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(units=512, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Flatten(name='flatten'))
+        model.add(Dropout(0.5))
+        model.add(Dense(10, activation='softmax', name='predictions'))
 
-        model = Model(input = img_input, output = x)
-        return model
-
-    def r3dcnn(self, input_shape=(224, 224)):
-        # input layer
-        img_input = Input(shape=input_shape, name='img_input')  # input to model
-        # block layer 1
-        x = Conv3D(filters=64, kernel_size=(3, 3, 3), padding='same')(img_input)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
-        # block layer 2
-        x = Conv3D(filters=128, kernel_size=(3, 3, 3), padding='same')(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
-        # block layer 3
-        x = Conv3D(filters=256, kernel_size=(3, 3, 3), padding='same')(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
-        # block layer 4
-        x = Conv3D(filters=512, kernel_size=(3, 3, 3), padding='same')(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
-        # block layer 2
-        x = Conv3D(filters=512, kernel_size=(3, 3, 3), padding='same')(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling3D(strides=(3, 3, 3), padding='same')(x)
-        # fully connected layer
-        x = Flatten()(x)
-        x = Dense(units=512, activation='relu')(x)
-        x = Dropout(0.5)(x)
-        x = Dense(units=512, activation='relu')(x)
-        x = Flatten()(x)
-        x = LSTM(512, return_sequences=False, dropout=0.5, input_shape=x.shape)(x)
-        x = Dropout(0.5)(x)
-        x = Flatten(name='flatten')(x)
-        x = Dropout(0.5)(x)
-        x = Dense(1, activation='softmax', name='predictions')(x)
-
-        model = Model(input=img_input, output=x)
+        # model = Model(input = img_input, output = x)
+        print(model.summary())
         return model

@@ -2,6 +2,7 @@ from random import shuffle
 
 import cv2
 from keras.preprocessing import image as image_utils
+from keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 import os
 from sklearn.model_selection import train_test_split
@@ -13,16 +14,25 @@ import pathlib
 
 class data:
     def __init__(self):
-        self.move_data(data_folder='data')
-        self.get_traintest_dfs()
-        self.move_to_train_test_dir('test_df.csv')
-        self.move_to_train_test_dir('train_df.csv')
+        # if not os.path.isfile('data.csv'): self.move_data(data_folder='data')
+        # if not os.path.isfile('test_df.csv') and not os.path.isfile('train_df.csv'):
+        #     self.get_traintest_dfs()
+        # self.make_data_folders()
+        # self.move_to_train_test_dir('test_df.csv')
+        # self.move_to_train_test_dir('train_df.csv')
+        # os.remove('theFrames')
+        # self.train_gen, self.test_gen = self.load_generators()
+        self.x_train, self.y_train = self.load_to_memory(['new_path','label'],'train_df.csv')
+        self.x_test, self.y_test = self.load_to_memory(['new_path', 'label'], 'test_df.csv')
 
-        samples_train = self.load_samples('train_df.csv')
-        self.train_gen = self.generator(samples_train)
-
-        samples_test = self.load_samples('test_df.csv')
-        self.test_gen = self.generator(samples_test)
+    def rename_classes_folders(self,base_dirs = ['data/train', 'data/test']):
+        if ' ' in os.listdir(base_dirs[0])[0]:
+            for base_dir in base_dirs:
+                classes = os.listdir(base_dir)
+                for clas in classes:
+                    path = os.path.join(base_dir, clas)
+                    path_new = os.path.join(base_dir, clas[3:])
+                    os.rename(path, path_new)
 
     def img_to_array(self, image):
         image = image_utils.load_img(image)
@@ -32,19 +42,23 @@ class data:
         image /= 255.0
         return image
 
-    def get_data_ready(self):
-        # subprocess.call('wget https://storage.googleapis.com/kaggle-data-sets/39466/61155/bundle/archive.zip?GoogleAccessId=web-data@kaggle-161607.iam.gserviceaccount.com&Expires=1587989257&Signature=lg6cf5sNrsHEtKtVqEVJHgEDCYqD9DlTyAC9A%2BBDPw9BGE7U5rs9m70l%2FbxCSQSn4MkZ9gsIS3lAg16JXu480vE7dVD4Cq%2B2txSKY05Muo6ZFsGAEtz5bIKtKe10keq1jIrz8ZbihwPRyQ2hJJ1N6g6hfx72%2BxHxEf7v%2Fu7dCzEQ%2B8aYoP6CynPFsyi75BkqpefPAO8GpGX0CorhCwIoKQdfa2c7%2BESzPek2DcRs1dxPLjHAeGkXY1J0mqDHV6at8LM961XiFPWcYjLv7ZMobMA%2F3n69vebLO1uviL1yXUu0HWbohZwlOOvjEgXnlUKn7NUec82U9aJmXfgQMucq1A%3D%3D&response-content-disposition=attachment%3B+filename%3Dleapgestrecog.zip')
-        subprocess.call('unzip leapgestrecog.zip')
-        subprocess.call('rm -r leapgestrecog/leapgestrecog')
-        subprocess.call('mv leapgestrecog/leapGestRecog data')
-        subprocess.call('rm -r leapgestrecog')
+    def get_data_ready(self, csv):
+        df = pd.read_csv(csv)
+        for row in df.iterrows():
+            row = row[1]
+            img = image_utils.load_img(row['new_path'])
+            img = img.resize((224,224))
+            img = image_utils.img_to_array(img)
+            img /= 255.0
+            img = image_utils.array_to_img(img)
+            os.remove(row['new_path'])
+            img.save(row['new_path'])
 
-    def get_labels(self, label_dir):
-        arr = os.listdir(label_dir)
-        labels = []
-        for clas in arr:
-            label = str(clas).split('_')[1]
-            if label not in labels: labels.append(label)
+    def get_labels(self, label_col, df):
+        labels = list(set(df[label_col]))
+        with open('labels.txt', 'w') as f:
+            for label in labels:
+                f.write(label+'\n')
         return labels
     # print(get_labels('data/00'))
 
@@ -69,10 +83,13 @@ class data:
         df = pd.DataFrame(dataCSV, columns=['image','path','label'])
         df.to_csv('data.csv')
         subprocess.call(['rm','-r','data'])
+        # subprocess.call(['mv','/data/','/data_org/'])
 
     def make_data_folders(self, csv='data.csv'):
         df = pd.read_csv(csv)
-        labels = set(df.label)
+        df['label'] = df['label'].apply(lambda x: x[3:])
+        labels = set(df['label'])
+        df.to_csv('data.csv')
         splits = ['train', 'test']
         if  not os.path.isdir('data'): os.mkdir('data')
         for split in splits:
@@ -104,7 +121,6 @@ class data:
         if split not in ['test', 'train']:
             print('Invalid CSV')
             sys.exit()
-        self.make_data_folders()
 
         df = pd.read_csv(split_csv)
         folder_split = os.path.join('data', split)
@@ -112,60 +128,64 @@ class data:
         new_paths = []
 
         for row in df.iterrows():
-            folder_dest = os.path.join(folder_split, str(row[1]['label']), str(row[1]['image'])+'.png')
-            # shutil.move(row[1]['path'], folder_dest)
+            folder_dest = os.path.join(folder_split, str(row[1]['label'])[3:], str(row[1]['image'])+'.png')
+            shutil.move(row[1]['path'], folder_dest)
+            # print(row[1]['path'], folder_dest)
             new_paths.append(folder_dest)
+        # sys.exit()
 
         df['new_path'] = pd.Series(new_paths, index=df.index)
+        df = df[['image','path','new_path','label']]
         df.to_csv(split_csv)
 
-    def load_samples(self,csv_file):
-        df = pd.read_csv(csv_file)
-        df = df[['new_path','label']]
-        file_names = list(df.iloc[:,0])
-        labels = list(df.iloc[:,1])
-        samples = []
-        for sam,lab in zip(file_names,labels): samples.append([sam,lab])
-        return samples
+    def load_to_memory(self,columns,csv):
+        if len(columns) == 0:
+            raise ValueError('Empty list of columns')
+        elif len(columns) == 2:
+            path_col = columns[0]
+            label_col = columns[1]
+        else:
+            raise Warning('Please provide two columns')
 
-    def generator(self, samples, batch_size=32,shuffle_data=True,resize=224):
-        """
-        Yields the next training batch.
-        Suppose `samples` is an array [[image1_filename,label1], [image2_filename,label2],...].
-        """
-        num_samples = len(samples)
-        while True: # Loop forever so the generator never terminates
-            shuffle(samples)
+        df = pd.read_csv(csv)
+        df = df[[path_col,label_col]]
+        df[label_col] = df[label_col].apply(lambda x: x[3:])
+        # self.get_data_ready(csv)
 
-            # Get index to start each batch: [0, batch_size, 2*batch_size, ..., max multiple of batch_size <= num_samples]
-            for offset in range(0, num_samples, batch_size):
-                # Get the samples you'll use in this batch
-                batch_samples = samples[offset:offset+batch_size]
+        # if os.path.isfile('labels.txt') or self.labels is None:
+        with open('labels.txt', 'r') as f:
+            self.labels = [line.rstrip('\n') for line in f]
+        # else:
+        self.labels = self.get_labels(label_col,df)
+        # print(self.labels)
+        # print(set(df[label_col]))
 
-                # Initialise X_train and y_train arrays for this batch
-                X_train = []
-                y_train = []
+        x, y = [], []
+        for row in df.iterrows():
+            img = cv2.imread(row[1][path_col])
+            label = self.labels.index(row[1][label_col])
+            x.append(np.array(img))
+            y.append(int(label))
+        assert len(x) == len(y)
+        return x, y
 
-                # For each example
-                for batch_sample in batch_samples:
-                    # Load image (X) and label (y)
-                    img_name = batch_sample[0]
-                    label = batch_sample[1]
-                    img =  cv2.imread(os.path.join(img_name))
+    def load_generators(self, train = 'data/train', test = 'data/test'):
+        # if os.path.isfile('labels.txt') or self.labels is None:
+        #     with open('labels.txt', 'r') as f:
+        #         self.labels = [line.rstrip('\n') for line in f]
+        # else:
+        self.labels = self.get_labels('label',pd.read_csv('train_df.csv'))
+        self.get_data_ready('train_df.csv')
+        self.get_data_ready('test_df.csv')
 
-                    # apply any kind of preprocessing
-                    img = cv2.resize(img,(resize,resize))
-                    # Add example to arrays
-                    X_train.append(img)
-                    y_train.append(label)
+        img_gen = ImageDataGenerator()
+        train_gen = img_gen.flow_from_directory(train,
+                                                classes=self.labels,
+                                                class_mode='categorical',
+                                                target_size=(224, 224))
+        test_gen = img_gen.flow_from_directory(test,
+                                                classes=self.labels,
+                                                class_mode='categorical',
+                                               target_size=(224,224))
 
-                # Make sure they're numpy arrays (as opposed to lists)
-                X_train = np.array(X_train)
-                y_train = np.array(y_train)
-
-                # The generator-y part: yield the next training batch
-                yield X_train, y_train
-
-
-# x, y = next(train_gen)
-# print(x.shape)
+        return train_gen, test_gen
