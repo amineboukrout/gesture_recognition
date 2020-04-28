@@ -20,7 +20,7 @@ class Models:
             print('Loading vgg19 model...')
             self.model = self.vgg(vggno=19, input_shape=input_shape)
         elif model == '2dcnn':
-            print('Loading 3d cnn model...')
+            print('Loading cnn model...')
             self.model = self.cnn()
         else:
             print('{} is not a valid model!'.format(model))
@@ -61,43 +61,6 @@ class Models:
         # model.add(Flatten(name='flatten'), input_shape=(None, None, 512))
         model.add(Dropout(0.5))
         model.add(Flatten())
-        model.add(Dense(10, activation='softmax', name='predictions'))
-
-        # model = Model(input = img_input, output = x)
-        print(model.summary())
-        return model
-
-    def cnn(self, input_shape = (224, 224, 3)):
-        # input layer: 32 IS THE BATCH
-        # img_input = Input(shape=input_shape, name='img_input')  # input to model
-        model = models.Sequential()
-        # block layer 1
-        model.add(Conv2D(input_shape=input_shape, filters=64, kernel_size=(3,3), padding='same'))
-        model.add(BatchNormalization())
-        model.add(MaxPooling2D(strides=(3,3), padding='same'))
-        # block layer 2
-        model.add(Conv2D(filters=128, kernel_size=(3,3), padding='same'))
-        model.add(BatchNormalization())
-        model.add(MaxPooling2D(strides=(3,3), padding='same'))
-        # block layer 3
-        model.add(Conv2D(filters=256, kernel_size=(3,3), padding='same'))
-        model.add(BatchNormalization())
-        model.add(MaxPooling2D(strides=(3,3), padding='same'))
-        # block layer 4
-        model.add(Conv2D(filters=512, kernel_size=(3,3), padding='same'))
-        model.add(BatchNormalization())
-        model.add(MaxPooling2D(strides=(3,3), padding='same'))
-        # block layer 2
-        model.add(Conv2D(filters=512, kernel_size=(3,3), padding='same'))
-        model.add(BatchNormalization())
-        model.add(MaxPooling2D(strides=(3,3), padding='same'))
-        # fully connected layer
-        model.add(Dense(units=512, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(units=512, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Flatten(name='flatten'))
-        model.add(Dropout(0.5))
         model.add(Dense(10, activation='softmax', name='predictions'))
 
         # model = Model(input = img_input, output = x)

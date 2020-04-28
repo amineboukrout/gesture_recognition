@@ -1,10 +1,10 @@
 index
+l
+thumb
 ok
 fist
-l
-fist moved
-thumb
 palm
-palm moved
 down
 c
+fist moved
+palm moved

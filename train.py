@@ -20,6 +20,7 @@ class MetricsCheckpoint(Callback):
         np.save(self.path, self.history)
 
 def train(model, batch_size, nb_epoch, image_shape, optimizer):
+    model_name = model
     tb = TensorBoard(log_dir=os.path.join('logs',model))
     early_stopper = EarlyStopping(patience=5)
     csv_logger = CSVLogger(os.path.join('logs',model,model+'-training'+'.log'))
@@ -35,13 +36,16 @@ def train(model, batch_size, nb_epoch, image_shape, optimizer):
     test_gen = datagen.flow(test_x, to_categorical(test_y))
 
     # model.model.fit(train_x, train_y,
-    #                 callbacks=[tb, early_stopper, csv_logger],
+    #                 callbacks=[tb, e
+    #
+    # arly_stopper, csv_logger],
     #                 validation_data=(test_x,test_y), validation_steps=60,
     #                 steps_per_epoch=steps_per_epoch, batch_size=batch_size)
     model.model.fit_generator(train_gen, epochs=nb_epoch,
-                    callbacks=[tb, early_stopper, csv_logger],
+                    callbacks=[tb, csv_logger, metricsCheckpoint],
                     validation_data=test_gen, validation_steps=60,
                     steps_per_epoch=steps_per_epoch)
+    model.model.save_weights(model_name+'.h5')
 
 def main():
     class_limit = int(2)
@@ -49,7 +53,7 @@ def main():
     image_width = int(224)
 
     # train parameters
-    model = '2dcnn'
+    model = 'vgg19'
     batch_size = 32
     nb_epoch = 100
     optimizer = 'Adam'

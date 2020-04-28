@@ -20,7 +20,7 @@ class data:
         # self.make_data_folders()
         # self.move_to_train_test_dir('test_df.csv')
         # self.move_to_train_test_dir('train_df.csv')
-        # os.remove('theFrames')
+        # os.removedirs('theFrames')
         # self.train_gen, self.test_gen = self.load_generators()
         self.x_train, self.y_train = self.load_to_memory(['new_path','label'],'train_df.csv')
         self.x_test, self.y_test = self.load_to_memory(['new_path', 'label'], 'test_df.csv')
@@ -138,7 +138,7 @@ class data:
         df = df[['image','path','new_path','label']]
         df.to_csv(split_csv)
 
-    def load_to_memory(self,columns,csv):
+    def load_to_memory(self,columns,csv, preprocess=False):
         if len(columns) == 0:
             raise ValueError('Empty list of columns')
         elif len(columns) == 2:
@@ -150,7 +150,7 @@ class data:
         df = pd.read_csv(csv)
         df = df[[path_col,label_col]]
         df[label_col] = df[label_col].apply(lambda x: x[3:])
-        # self.get_data_ready(csv)
+        if preprocess: self.get_data_ready(csv)
 
         # if os.path.isfile('labels.txt') or self.labels is None:
         with open('labels.txt', 'r') as f:
