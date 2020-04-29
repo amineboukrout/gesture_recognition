@@ -19,7 +19,12 @@ A *requirements.txt* will be made available in due course.
 Run the following to train the models:
 	`python3 train.py`
 This will train the model. This is not the final documentation and will be updated accordingly.
-## Running the Classification Model
-To be added...
 ## Results
+This is the accuracy through epochs for VGG16:
 ![alt text](https://github.com/amineboukrout/gesture_recognition/blob/master/figures/fig_vgg16.png "VGG16 accuracy")
+
+This is the accuracy through epochs for VGG19:
+![alt text](https://github.com/amineboukrout/gesture_recognition/blob/master/figures/fig_vgg19.png "VGG19 accuracy")
+
+###  Still need to...
+   * Code the classification function
