@@ -13,7 +13,9 @@ Training does take a long time. The models that are adapted to this recognition 
    * Keras
    * Pandas
    * Numpy
+
 A *requirements.txt* will be made available in due course. 
+
 Run the following to train the models:
 	`python3 train.py`
 This will train the model. This is not the final documentation and will be updated accordingly.
